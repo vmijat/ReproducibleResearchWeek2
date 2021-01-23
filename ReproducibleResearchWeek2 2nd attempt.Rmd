@@ -10,7 +10,7 @@ print(Sys.time())
 
 =========================================
 
-First we will load the data from URL into /_data/ folder a variable:
+## First we will load the data from URL into /_data/ folder a variable:
 
 ```{r}
 dataFile <- download.file("https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip", "./_data/Activity.zip")
@@ -69,20 +69,20 @@ ggplot(data = steps_per_day,aes(x = date, y = total.steps)) +
         ylab("Step Count") +
         theme_gray()
 
+steps_mean <- round(mean(steps_per_day$total.steps), 1)
 
-summary_mean <- activityDF %>%  
-        group_by(date) %>% 
-        summarise(mean = mean(steps, na.rm = TRUE))
+steps_median <- median(steps_per_day$total.steps)
 
-summary_median <- activityDF %>%  #WHY? Oh WHY? 
-        group_by(date) %>% 
-        summarise(median = median(steps, na.rm = TRUE))
 
+
+print(paste("mean number of steps per day is:", steps_mean))
+
+print(paste("Average number of steps is:", steps_median))
 
 ```
 
 
-What is the average daily activity pattern?
+## What is the average daily activity pattern?
 
 ```{r}
 
@@ -112,7 +112,7 @@ print(paste("Total number of incomplete rows:", total_incomplete_rows))
 ```
 
 
-Strategy for filling the missing values for steps: Impute with mean value
+## Strategy for filling the missing values for steps: Impute with mean value
 
 ```{r}
 
@@ -139,18 +139,20 @@ ggplot(data = steps_per_day_imputed,aes(x = date, y = total.steps)) +
         ylab("Step Count") +
         theme_gray()
 
-summary_mean_imputed <- activityDF_imputed %>%  
-        group_by(date) %>% 
-        summarise(mean = mean(steps, na.rm = TRUE))
+mean_imputed <- round(mean(steps_per_day_imputed$total.steps), 1)
 
-summary_median_imputed <- activityDF_imputed %>%  #WHY? Oh WHY? 
-        group_by(date) %>% 
-        summarise(median = median(steps, na.rm = TRUE))
+median_imputed <- median(steps_per_day_imputed$total.steps)
+
+print(paste("Mean number of steps (when imputed) is:", mean_imputed))
+
+print(paste("Median number of steps (when imputed) is:", median_imputed))
 
 ```
 
+surely **it is different**, the dates where data is imputed show higher number of steps.  
 
-Are there differences in activity patterns between weekdays and weekends?
+
+# Are there differences in activity patterns between weekdays and weekends?
 
 Let's create new variable with weekdays and weekends
 
@@ -159,7 +161,17 @@ Let's create new variable with weekdays and weekends
 activityDF$Weekday.Weekend <- ifelse(weekdays(activityDF$date) %in% c("Monday","Tuesday","Wednesday","Thursday","Friday"), "Weekday", "Weekend")
 
 levels(activityDF$Weekday.Weekend) <-c("Weekday", "Weekend")
-                        
-   
+
+activityDF <- activityDF %>% 
+        group_by(Weekday.Weekend, interval)  %>% 
+        summarise(average.steps = mean(steps, na.rm = TRUE))
+
+ggplot(data = activityDF,aes(x = interval, y = average.steps, color = Weekday.Weekend)) +
+        geom_line()+
+        ylab("Average Step Count") +
+        facet_grid(Weekday.Weekend~.)
+
+
 ```
 
+There are differences.  It is clear that on weekdays there are more steps early in the morning.  On weekends there are more steps in the middle of the day and late evening. 
