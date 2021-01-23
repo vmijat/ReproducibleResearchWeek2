@@ -1,0 +1,40 @@
+Done by: Vladimir Mijatovic
+=========================================
+
+Date of creation:
+```{r}
+print(Sys.time())
+```
+
+
+=========================================
+
+First we will load the data from URL into /_data/ folder a variable:
+
+```{r}
+dataFile <- download.file("https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip", "./_data/ActivityMonitoringData.txt")
+
+```
+
+Let's load libraries needed:
+```{r}
+library(tidyverse)
+library(dplyr)
+
+```
+
+
+
+Then read from the locally stored file into data frame:
+
+```{r}
+
+activityDF <- read.csv("./_data/activity.csv")
+
+
+```
+
+
+
+
+
