@@ -1,3 +1,4 @@
+
 Done by: Vladimir Mijatovic
 =========================================
 
@@ -12,14 +13,19 @@ print(Sys.time())
 First we will load the data from URL into /_data/ folder a variable:
 
 ```{r}
-dataFile <- download.file("https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip", "./_data/ActivityMonitoringData.txt")
+dataFile <- download.file("https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip", "./_data/Activity.zip")
 
+#see if file exists already  #CHECK THIS
+if(!file.exists("./_data/Activity.csv")){
+        unzip("./_data/activity.zip")
+}
 ```
 
 Let's load libraries needed:
 ```{r}
 library(tidyverse)
 library(dplyr)
+library(ggplot2)
 
 ```
 
@@ -29,12 +35,131 @@ Then read from the locally stored file into data frame:
 
 ```{r}
 
-activityDF <- read.csv("./_data/activity.csv")
+activityDF <- read.csv("./_data/activity.csv", stringsAsFactors = FALSE)
+
+str(activityDF)
+```
+
+Transform data into better format
+
+```{r}
+#transform date
+activityDF$date <- as.POSIXct(activityDF$date, "%Y-%m-%d", tz="CET")
+str(activityDF)
+summary(activityDF)
+
+#remove NAs (prepare clean df if needed)
+
+activityDF_clean <- activityDF[!is.na(activityDF$steps), ]
+summary(activityDF_clean)
+
+```
+
+calculate total number of steps per day:
+
+```{r}
+
+steps_per_day <- activityDF %>% 
+        group_by(date) %>% 
+        summarise(total.steps = sum(steps, na.rm = TRUE))
+
+ggplot(data = steps_per_day,aes(x = date, y = total.steps)) +
+        geom_bar(stat = "identity", color = "Black", fill = "LightGreen") +
+        xlab("Date") +
+        ylab("Step Count") +
+        theme_gray()
+
+
+summary_mean <- activityDF %>%  
+        group_by(date) %>% 
+        summarise(mean = mean(steps, na.rm = TRUE))
+
+summary_median <- activityDF %>%  #WHY? Oh WHY? 
+        group_by(date) %>% 
+        summarise(median = median(steps, na.rm = TRUE))
 
 
 ```
 
 
+What is the average daily activity pattern?
+
+```{r}
+
+steps_per_timeslot <- activityDF %>% 
+        group_by(interval) %>% 
+        summarise(average.steps = mean(steps, na.rm = TRUE))
+
+ggplot(data = steps_per_timeslot,aes(x = interval, y = average.steps)) +
+        geom_line(color = "Green")+
+        xlab("Interval") +
+        ylab("Average Step Count") 
+        
+max_interval <- steps_per_timeslot[which.max(steps_per_timeslot$average.steps), ]
+print(paste("The interval with maximum number of steps(averaged) is at:", max_interval[1]))
 
 
+```
+
+
+Now let's deal with NAs
+
+```{r}
+
+total_incomplete_rows <- sum(!complete.cases(activityDF))
+print(paste("Total number of incomplete rows:", total_incomplete_rows))
+
+```
+
+
+Strategy for filling the missing values for steps: Impute with mean value
+
+```{r}
+
+#fill NAs with mean value for that day
+
+#na_activityDF <- activityDF[is.na(activityDF$steps), ] 
+activityDF_imputed <- activityDF
+activityDF_imputed[is.na(activityDF_imputed$steps), ]$steps <- mean(activityDF_imputed$steps, na.rm = TRUE)
+
+```
+
+
+Now let's create histogram of the total numbe of steps taken each day:
+
+```{r}
+
+steps_per_day_imputed <- activityDF_imputed %>% 
+        group_by(date) %>% 
+        summarise(total.steps = sum(steps, na.rm = TRUE))
+
+ggplot(data = steps_per_day_imputed,aes(x = date, y = total.steps)) +
+        geom_bar(stat = "identity", color = "Black", fill = "LightGreen") +
+        xlab("Date") +
+        ylab("Step Count") +
+        theme_gray()
+
+summary_mean_imputed <- activityDF_imputed %>%  
+        group_by(date) %>% 
+        summarise(mean = mean(steps, na.rm = TRUE))
+
+summary_median_imputed <- activityDF_imputed %>%  #WHY? Oh WHY? 
+        group_by(date) %>% 
+        summarise(median = median(steps, na.rm = TRUE))
+
+```
+
+
+Are there differences in activity patterns between weekdays and weekends?
+
+Let's create new variable with weekdays and weekends
+
+```{r}
+#let's add column Weekday.Weekend to determine what is it
+activityDF$Weekday.Weekend <- ifelse(weekdays(activityDF$date) %in% c("Monday","Tuesday","Wednesday","Thursday","Friday"), "Weekday", "Weekend")
+
+levels(activityDF$Weekday.Weekend) <-c("Weekday", "Weekend")
+                        
+   
+```
 
